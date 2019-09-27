@@ -22,30 +22,33 @@ def req_page(url):
 
 def get_data(soup):
 
-    coins = soup.find('tbody').findAll('tr')
+    coins = soup.find('tbody').findAll('tr', limit = 1000)
 
-    for coin in coins:
-        activity = 0
-        name = coin.find(class_='currency-name-container link-secondary').get_text()
-        rank = coin.find(class_='text-center').get_text()
-        market_cap = coin.find(class_='no-wrap market-cap text-right').get_text()
-        price = float(coin.find(class_='no-wrap text-right').get('data-sort'))
-        volume = float(coin.find(class_='price').get('data-usd'))
-        circulating_supply = float(coin.find(class_='no-wrap text-right circulating-supply').get('data-sort'))
+    with open('CryptoData.csv', 'w') as csv_file:
+        csv_writer = writer(csv_file)
+        headers = ['Rank', 'Coin', 'Market Cap', 'Price', 'Volume', 'Circulating Supply',
+                   'Estimated Activity Percentage']
+        csv_writer.writerow(headers)
 
-        # Calculates activity
-        activity = float((volume / price) / circulating_supply)
+        for coin in coins:
+            rank = coin.find(class_='text-center').get_text()
+            coin_name = coin.find(class_='currency-name-container link-secondary').get_text()
+            market_cap = coin.find(class_='no-wrap market-cap text-right').get_text()
+            price = float(coin.find(class_='no-wrap text-right').get('data-sort'))
+            volume = float(coin.find(class_='price').get('data-usd'))
+            circulating_supply = float(coin.find(class_='no-wrap text-right circulating-supply').get('data-sort'))
 
-        print(rank, activity)
+            # Calculates activity
+            activity = float(format(((volume / price) / circulating_supply), '.15f'))
+            activity_percentage = '{0:.12f}%'.format(activity * 100)
+
+            csv_writer.writerow([rank, coin_name, market_cap, price, volume, circulating_supply,
+                                 activity_percentage])
 
 
 def main():
-    url = 'https://coinmarketcap.com/'
-    pages = 1
-    while pages <= 10:
-        url = ('https://coinmarketcap.com/') + str(pages)
-        get_data(req_page(url))
-        pages += 1
+    url = "https://coinmarketcap.com/all/views/all/"
+    get_data(req_page(url))
 
 
 if __name__ == '__main__':
